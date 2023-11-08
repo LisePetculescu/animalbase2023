@@ -1,9 +1,11 @@
-import { selectSearch, searchList } from "./search.js";
 import * as RESTAPI from "./rest-api.js";
 
 import ListRenderer from "./view/listrenderer.js";
 import AnimalRenderer from "./view/animalrenderer.js";
-import AnimalDialog from "./view/animaldialog.js";
+import AnimalCreateDialog from "./view/animalcreatedialog.js";
+import AnimalUpdateDialog from "./view/animalupdatedialog.js";
+import ConfirmDeleteDialog from "./view/confirmdeletedialog.js";
+import SearchBox from "./view/searchbox.js";
 
 window.addEventListener("load", start);
 
@@ -13,6 +15,9 @@ let animals = [];
 // views
 let animalList = null;
 let createDialog = null;
+let updateDialog = null;
+let confirmDialog = null;
+let searchBox = null;
 
 // controller
 // THIS is the controller ...
@@ -31,17 +36,31 @@ async function start() {
 
 // *** VIEWS ***
 
+
+
 function initializeViews() {
   // Create list-component
   animalList = new ListRenderer(animals, "#list tbody", AnimalRenderer);
   animalList.render();
 
   // Create dialog-component
-  createDialog = new AnimalDialog("create-dialog");
+  createDialog = new AnimalCreateDialog("create-dialog");
   createDialog.render();
+
+  updateDialog = new AnimalUpdateDialog("update-dialog");
+  updateDialog.render();
+
+  confirmDialog = new ConfirmDeleteDialog("delete-dialog");
+
+  searchBox = new SearchBox("search");
+  searchBox.setListToUpdate(animalList);
+  searchBox.render();
+
 
   // initialize create-button
   document.querySelectorAll("[data-action='create']").forEach(button => button.addEventListener("click", createDialog.show.bind(createDialog)));
+
+
 
   // initialize sort buttons
   document.querySelectorAll("[data-action='sort']").forEach(button =>
@@ -68,28 +87,6 @@ function initializeViews() {
 }
 
 
-function initializeActionButtons() {
-  document.querySelectorAll("[data-action='search']").forEach(field => {
-    field.addEventListener("search", selectSearch); // Non-standard, but included just in case
-    field.addEventListener("blur", selectSearch);
-    field.addEventListener("change", selectSearch);
-    field.addEventListener("keyup", selectSearch);
-  });
-
-  document.querySelectorAll("[data-action='create']").forEach(button => button.addEventListener("click", showCreateDialog));
-}
-
-async function displayUpdatedList() {
-  const animals = await getAllAnimals();
-
-  const sortedList = sortList(animals);
-  const filteredList = filterList(sortedList);
-  const searchedList = searchList(filteredList);
-
-  displayList(searchedList);
-}
-
-
 // *** Controller things ***
 
 async function createAnimal(animal) {
@@ -103,5 +100,40 @@ async function createAnimal(animal) {
 
 }
 
+function selectAnimalForUpdate(animal) {
+  updateDialog.setAnimal(animal);
+  updateDialog.show();
+}
 
-export { displayUpdatedList, createAnimal };
+async function updateAnimal(animal) {
+  // call rest-api
+  await RESTAPI.updateAnimal(animal);
+
+  // update list
+  animals = await RESTAPI.getAllAnimals();
+  animalList.setList(animals);
+  animalList.render();
+
+}
+
+async function updateSingleProperty(animal, property) {
+  await RESTAPI.patchAnimal(animal, property, animal[property]);  
+  // Do not re-render the entire list for a single property - expect the View to re-render itself!
+}
+
+function confirmDeleteAnimal(animal) {
+  confirmDialog.setAnimal(animal);
+  confirmDialog.render();
+  confirmDialog.show();
+}
+
+async function deleteAnimal(animal) {
+  await RESTAPI.deleteAnimal(animal);
+
+   // update list
+   animals = await RESTAPI.getAllAnimals();
+   animalList.setList(animals);
+   animalList.render();
+}
+
+export { createAnimal , selectAnimalForUpdate, updateAnimal, updateSingleProperty, confirmDeleteAnimal, deleteAnimal};
