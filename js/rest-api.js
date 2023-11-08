@@ -1,7 +1,7 @@
 import Animal from "./model/animal.js";
 
-const endPoint = "http://localhost:4000/animals";
-//const endPoint = "https://petl-animalbase02.azurewebsites.net/animals";
+// const endPoint = "http://localhost:4000/animals";
+const endPoint = "https://petl-animalbase02.azurewebsites.net/animals";
 
 
 
